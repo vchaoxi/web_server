@@ -1,4 +1,6 @@
-网络动态服务器-2-传递数据给应用
+# 网络动态服务器-2-传递数据给应用
+
+```
 #coding=utf-8
 import socket
 import sys
@@ -161,3 +163,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
+
+
+![](/assets/Snip20161119_29.png)
