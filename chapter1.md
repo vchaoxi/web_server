@@ -1,5 +1,7 @@
 
-网页静态服务器-1-显示固定的页面
+# 网页静态服务器-1-显示固定的页面
+
+```
 #coding=utf-8
 import socket
 from multiprocessing import Process
@@ -38,7 +40,11 @@ def main():
 
 if __name__ == '__main__':
     main()
-服务器端
+```
 
+ ## 服务器端
 
-客户端
+![](/assets/Snip20161117_2.png)
+
+## 客户端
+![](/assets/Snip20161117_3.png)

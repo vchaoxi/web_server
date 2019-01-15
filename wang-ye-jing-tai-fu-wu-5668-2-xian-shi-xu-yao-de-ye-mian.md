@@ -1,4 +1,6 @@
+# 网页静态服务器-2显示需要的页面
 
+```
 #coding=utf-8
 import socket
 from multiprocessing import Process
@@ -59,7 +61,12 @@ documentRoot = './html'
 
 if __name__ == '__main__':
     main()
-服务器端
+```
 
+## 服务器端
 
-客户端
+![](/assets/Snip20161117_7.png)
+
+## 客户端
+
+![](/assets/Snip20161117_5.png)

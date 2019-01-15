@@ -1,4 +1,6 @@
-网页静态服务器-3-使用类
+## 网页静态服务器-3-使用类
+
+```
 #coding=utf-8
 import socket
 import sys
@@ -84,3 +86,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
+
