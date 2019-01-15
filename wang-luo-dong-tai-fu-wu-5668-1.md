@@ -1,4 +1,5 @@
-网络动态服务器-1
+# 网络动态服务器-1
+```
 #coding=utf-8
 import socket
 import sys
@@ -146,3 +147,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
