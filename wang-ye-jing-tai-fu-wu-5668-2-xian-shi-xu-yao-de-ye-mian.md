@@ -1,7 +1,6 @@
 # 网页静态服务器-2显示需要的页面
 
 ```
-#coding=utf-8
 import socket
 from multiprocessing import Process
 import re
@@ -12,29 +11,29 @@ def handleClient(clientSocket):
     recvData = clientSocket.recv(2014)
     requestHeaderLines = recvData.splitlines()
     for line in requestHeaderLines:
-        print(line)
+        print(line.decode())
 
     httpRequestMethodLine = requestHeaderLines[0]
-    getFileName = re.match("[^/]+(/[^ ]*)", httpRequestMethodLine).group(1)
-    print("file name is ===>%s"%getFileName) #for test
+    getFileName = re.match("[^/]+(/[^ ]*)", httpRequestMethodLine.decode()).group(1)
+    print("file name is ===>%s" % getFileName)  # for test
 
     if getFileName == '/':
         getFileName = documentRoot + "/index.html"
     else:
         getFileName = documentRoot + getFileName
 
-    print("file name is ===2>%s"%getFileName) #for test
+    print("file name is ===2>%s" % getFileName)  # for test
 
     try:
-        f = open(getFileName)
+        f = open(getFileName, 'rb')
     except IOError:
-        responseHeaderLines = "HTTP/1.1 404 not found\r\n"
-        responseHeaderLines += "\r\n"
-        responseBody = "====sorry ,file not found===="
+        responseHeaderLines = b"HTTP/1.1 404 not found\r\n"
+        responseHeaderLines += b"\r\n"
+        responseBody = b"====sorry ,file not found===="
     else:
-        responseHeaderLines = "HTTP/1.1 200 OK\r\n"
-        responseHeaderLines += "\r\n"
-        responseBody = f.read()
+        responseHeaderLines = b"HTTP/1.1 200 OK\r\n"
+        responseHeaderLines += b"\r\n"
+        responseBody = f.read().encode()
         f.close()
     finally:
         response = responseHeaderLines + responseBody
@@ -50,14 +49,15 @@ def main():
     serverSocket.bind(("", 7788))
     serverSocket.listen(10)
     while True:
-        clientSocket,clientAddr = serverSocket.accept()
-        clientP = Process(target = handleClient, args = (clientSocket,))
+        clientSocket, clientAddr = serverSocket.accept()
+        clientP = Process(target=handleClient, args=(clientSocket,))
         clientP.start()
         clientSocket.close()
 
 
-#这里配置服务器
+# 这里配置服务器
 documentRoot = './html'
+
 
 if __name__ == '__main__':
     main()
