@@ -5,62 +5,86 @@ import socket
 from multiprocessing import Process
 import re
 
-# 这里配置服务器
-document_root = './html'
+
+class WSGIServer(object):
+
+    addressFamily = socket.AF_INET
+    socketType = socket.SOCK_STREAM
+    requestQueueSize = 5
+
+    def __init__(self, server_address):
+        # 创建一个tcp套接字
+        self.listenSocket = socket.socket(self.addressFamily, self.socketType)
+        # 允许重复使用上次的套接字绑定的port
+        self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # 绑定
+        self.listenSocket.bind(server_address)
+        # 开始监听，并指定队列的长度
+        self.listenSocket.listen(self.requestQueueSize)
+
+    def serveForever(self):
+        '循环运行web服务器，等待客户端的链接并为客户端服务'
+        while True:
+            # 等待新客户端到来
+            self.clientSocket, client_address = self.listenSocket.accept()
+
+            # 方法2，多进程服务器，并发服务器于多个客户端
+            newClientProcess = Process(target=self.handleRequest)
+            newClientProcess.start()
+
+            # 因为创建的新进程中，会对这个套接字+1，所以需要在主进程中减去一次，即调用一次close
+            self.clientSocket.close()
+
+    def handleRequest(self):
+        '用一个新的进程，为一个客户端进行服务'
+        recvData = self.clientSocket.recv(2048)
+        requestHeaderLines = recvData.splitlines()
+        for line in requestHeaderLines:
+            print(line.decode())
+
+        httpRequestMethodLine = requestHeaderLines[0]
+        getFileName = re.match("[^/]+(/[^ ]*)", httpRequestMethodLine.decode()).group(1)
+        print("file name is ===>%s" % getFileName)  # for test
+
+        if getFileName == '/':
+            getFileName = documentRoot + "/index.html"
+        else:
+            getFileName = documentRoot + getFileName
+
+        print("file name is ===2>%s" % getFileName)  # for test
+
+        try:
+            f = open(getFileName, 'rb')
+        except IOError:
+            responseHeaderLines = b"HTTP/1.1 404 not found\r\n"
+            responseHeaderLines += b"\r\n"
+            responseBody = b"====sorry ,file not found===="
+        else:
+            responseHeaderLines = b"HTTP/1.1 200 OK\r\n"
+            responseHeaderLines += b"\r\n"
+            responseBody = f.read()
+            f.close()
+        finally:
+            response = responseHeaderLines + responseBody
+            self.clientSocket.send(response)
+            self.clientSocket.close()
 
 
-def handle_client(client_sock):
-    '''新的进程来处理客户端的数据收发'''
-    # 1. 接收请求
-    recv_data = client_sock.recv(4096)
-    print(recv_data.decode())
-    # 2. 构造响应数据
-    http_request_header_lines = recv_data.splitlines()
-    http_request_method_line = http_request_header_lines[0]
-    request_file_name = re.match("[^/]+(/[^ ]*)", http_request_method_line.decode()).group(1)
-    print("file name is ===>", request_file_name)  # for test only
-    if request_file_name == '/':
-        file_name = document_root + "/index.html"
-    else:
-        file_name = document_root + request_file_name
-    print("file name is ===>", request_file_name)  # for test only
-    try:
-        f = open(file_name, 'rb')
-    except IOError:
-        response_headers = b'HTTP/1.1 404 not found\r\n'
-        response_headers += b'\r\n'
-        response_body = b'Sorry, file not found!'
-    else:
-        response_headers = b'HTTP/1.1 200 OK\r\n'
-        response_headers += b'\r\n'
-        response_body = f.read().encode()
-        f.close()
-    finally:
-        response = response_headers + response_body
-        # 3. 发送响应
-        client_sock.send(response)
-        # 4. 关闭 client_sock 套接字
-        client_sock.close()
+# 设定服务器的端口
+serverAddr = (HOST, PORT) = '', 8888
+# 设置服务器服务静态资源时的路径
+documentRoot = './html'
+
+
+def makeServer(serverAddr):
+    server = WSGIServer(serverAddr)
+    return server
 
 
 def main():
-    '''程序的主体函数'''
-    # 1. 创建套接字
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ## 设置socket可复用
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # 2. 绑定
-    server_socket.bind(("", 7788))
-    # 3. 监听
-    server_socket.listen(10)
-    while True:
-        # 4. accept
-        client_sock, client_addr = server_socket.accept()
-        # 5. 用 client_sock 进行数据收发
-        ## 创建进程
-        client_p = Process(target=handle_client, args=(client_sock,))
-        ## 启动进程
-        client_p.start()
+    httpd = makeServer(serverAddr)
+    print('web Server: Serving HTTP on port %d ...\n' % PORT)
+    httpd.serveForever()
 
 
 if __name__ == '__main__':
