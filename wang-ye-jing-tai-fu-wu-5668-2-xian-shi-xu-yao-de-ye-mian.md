@@ -6,7 +6,7 @@ from multiprocessing import Process
 import re
 
 # 这里配置服务器
-documentRoot = './html'
+document_root = './html'
 
 
 def handle_client(client_sock):
@@ -22,7 +22,7 @@ def handle_client(client_sock):
     if request_file_name == '/':
         file_name = document_root + "/index.html"
     else:
-        file_name = documentRoot + request_file_name
+        file_name = document_root + request_file_name
     print("file name is ===>", request_file_name)  # for test only
     try:
         f = open(file_name, 'rb')
