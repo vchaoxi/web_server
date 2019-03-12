@@ -40,6 +40,8 @@ def main():
         client_p = Process(target=handle_client, args=(client_sock,))
         ## 启动进程
         client_p.start()
+        # 6. 由于创建的新进程中,会对client_sock进行+1，所以,主进程中需要-1,即调用一次close
+        client_sock.close()
 
 
 if __name__ == '__main__':
