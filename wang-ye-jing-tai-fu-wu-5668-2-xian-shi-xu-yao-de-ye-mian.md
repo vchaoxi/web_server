@@ -5,58 +5,62 @@ import socket
 from multiprocessing import Process
 import re
 
+# 这里配置服务器
+documentRoot = './html'
 
-def handleClient(clientSocket):
-    '用一个新的进程，为一个客户端进行服务'
-    recvData = clientSocket.recv(2014)
-    requestHeaderLines = recvData.splitlines()
-    for line in requestHeaderLines:
-        print(line.decode())
 
-    httpRequestMethodLine = requestHeaderLines[0]
-    getFileName = re.match("[^/]+(/[^ ]*)", httpRequestMethodLine.decode()).group(1)
-    print("file name is ===>%s" % getFileName)  # for test
-
-    if getFileName == '/':
-        getFileName = documentRoot + "/index.html"
+def handle_client(client_sock):
+    '''新的进程来处理客户端的数据收发'''
+    # 1. 接收请求
+    recv_data = client_sock.recv(4096)
+    print(recv_data.decode())
+    # 2. 构造响应数据
+    http_request_header_lines = recv_data.splitlines()
+    http_request_method_line = http_request_header_lines[0]
+    request_file_name = re.match("[^/]+(/[^ ]*)", http_request_method_line.decode()).group(1)
+    print("file name is ===>", request_file_name)  # for test only
+    if request_file_name == '/':
+        file_name = document_root + "/index.html"
     else:
-        getFileName = documentRoot + getFileName
-
-    print("file name is ===2>%s" % getFileName)  # for test
-
+        file_name = documentRoot + request_file_name
+    print("file name is ===>", request_file_name)  # for test only
     try:
-        f = open(getFileName, 'rb')
+        f = open(file_name, 'rb')
     except IOError:
-        responseHeaderLines = b"HTTP/1.1 404 not found\r\n"
-        responseHeaderLines += b"\r\n"
-        responseBody = b"====sorry ,file not found===="
+        response_headers = b'HTTP/1.1 404 not found\r\n'
+        response_headers += b'\r\n'
+        response_body = b'Sorry, file not found!'
     else:
-        responseHeaderLines = b"HTTP/1.1 200 OK\r\n"
-        responseHeaderLines += b"\r\n"
-        responseBody = f.read().encode()
+        response_headers = b'HTTP/1.1 200 OK\r\n'
+        response_headers += b'\r\n'
+        response_body = f.read().encode()
         f.close()
     finally:
-        response = responseHeaderLines + responseBody
-        clientSocket.send(response)
-        clientSocket.close()
+        response = response_headers + response_body
+        # 3. 发送响应
+        client_sock.send(response)
+        # 4. 关闭 client_sock 套接字
+        client_sock.close()
 
 
 def main():
-    '作为程序的主控制入口'
-
-    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serverSocket.bind(("", 7788))
-    serverSocket.listen(10)
+    '''程序的主体函数'''
+    # 1. 创建套接字
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ## 设置socket可复用
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # 2. 绑定
+    server_socket.bind(("", 7788))
+    # 3. 监听
+    server_socket.listen(10)
     while True:
-        clientSocket, clientAddr = serverSocket.accept()
-        clientP = Process(target=handleClient, args=(clientSocket,))
-        clientP.start()
-        clientSocket.close()
-
-
-# 这里配置服务器
-documentRoot = './html'
+        # 4. accept
+        client_sock, client_addr = server_socket.accept()
+        # 5. 用 client_sock 进行数据收发
+        ## 创建进程
+        client_p = Process(target=handle_client, args=(client_sock,))
+        ## 启动进程
+        client_p.start()
 
 
 if __name__ == '__main__':
